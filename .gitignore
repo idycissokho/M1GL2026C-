@@ -1,0 +1,74 @@
+# Build folders
+[Bb]in/
+[Oo]bj/
+**/bin/
+**/obj/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider / IntelliJ
+.idea/
+*.iml
+
+# VSCode
+.vscode/
+
+# NuGet
+*.nupkg
+packages/
+**/packages/
+
+# Publish output
+publish/
+_publish/
+*/publish/
+*/_PublishedWebsites/
+
+# ASP.NET & Web Forms
+*.cache
+App_Data/
+*.mdf
+*.ldf
+*.log
+
+# ASP.NET Core / Blazor specific
+wwwroot/node_modules/
+wwwroot/dist/
+wwwroot/_framework/
+node_modules/
+npm-debug.log*
+yarn-error.log*
+yarn.lock
+package-lock.json
+
+# Static/site build outputs (adjust names if you use different folders)
+dist/
+build/
+out/
+
+# Test results / coverage
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# IIS Express
+/.vs/config/
+iisexpress/
+
+# Docker
+docker-compose.override.yml
+**/Dockerfile*
+
+# Resharper
+_ReSharper*/
+*._ReSharper*/
+
+# Rider caches
+.idea/
+*.sln
