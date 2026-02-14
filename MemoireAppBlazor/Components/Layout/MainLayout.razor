@@ -1,0 +1,61 @@
+﻿@inherits LayoutComponentBase
+
+<div class="app-layout" data-theme="@(IsDarkMode ? "dark" : "light")">
+    <Sidebar OnToggle="HandleSidebarToggle" />
+    
+    <div class="main-wrapper @(IsSidebarCollapsed ? "sidebar-collapsed" : "")">
+        <Topbar OnThemeChange="HandleThemeChange" />
+        
+        <main class="main-content">
+            @Body
+        </main>
+    </div>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    private bool IsDarkMode { get; set; } = false;
+    private bool IsSidebarCollapsed { get; set; } = false;
+
+    private void HandleThemeChange(bool isDark)
+    {
+        IsDarkMode = isDark;
+    }
+
+    private void HandleSidebarToggle(bool isCollapsed)
+    {
+        IsSidebarCollapsed = isCollapsed;
+    }
+}
+
+<style>
+    .app-layout {
+        min-height: 100vh;
+        background: var(--bg-primary);
+    }
+
+    .main-wrapper {
+        margin-left: 280px;
+        transition: margin-left var(--transition-base);
+    }
+
+    .main-wrapper.sidebar-collapsed {
+        margin-left: 80px;
+    }
+
+    .main-content {
+        margin-top: 72px;
+        min-height: calc(100vh - 72px);
+    }
+
+    @@media (max-width: 768px) {
+        .main-wrapper {
+            margin-left: 80px;
+        }
+    }
+</style>

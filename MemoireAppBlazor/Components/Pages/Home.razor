@@ -1,0 +1,282 @@
+@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>Dashboard - MémoireApp</PageTitle>
+
+<div class="dashboard-container animate-fade-in">
+    <div class="dashboard-header">
+        <div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Vue d'ensemble de la gestion des mémoires académiques</p>
+        </div>
+        @* <button class="btn btn-primary">
+            <span>➕</span>
+            <span>Nouveau mémoire</span>
+        </button> *@
+    </div>
+
+    <div class="kpi-grid">
+        <KpiCard 
+            Icon="📚" 
+            Value="@TotalMemoires.ToString()" 
+            Label="Total Mémoires"
+            Trend="+12%"
+            IconGradient="linear-gradient(135deg, #10b981 0%, #059669 100%)" />
+
+        <KpiCard 
+            Icon="" 
+            Value="@MemoiresValides.ToString()" 
+            Label="Mémoires Validés"
+            Trend="+8%"
+            IconGradient="linear-gradient(135deg, #34d399 0%, #10b981 100%)" />
+
+        <KpiCard 
+            Icon="" 
+            Value="@MemoiresEnAttente.ToString()" 
+            Label="En Attente"
+            Trend="-5%"
+            IconGradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" />
+
+        <KpiCard 
+            Icon="👨" 
+            Value="@TotalEtudiants.ToString()" 
+            Label="Étudiants Actifs"
+            Trend="+15%"
+            IconGradient="linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" />
+    </div>
+
+    <div class="dashboard-content">
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">Derniers mémoires déposés</h2>
+                <a href="/memoires" class="card-link">Voir tout →</a>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Titre</th>
+                            <th>Étudiant</th>
+                            <th>Encadreur</th>
+                            <th>Date</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var memoire in DerniersMemoires)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="table-title">@memoire.Titre</div>
+                                </td>
+                                <td>@memoire.Etudiant</td>
+                                <td>@memoire.Encadreur</td>
+                                <td>@memoire.DateDepot.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <span class="badge badge-@GetStatusClass(memoire.Statut)">
+                                        @memoire.Statut
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="table-actions">
+                                        <button class="action-icon" title="Voir">👁️</button>
+                                        <button class="action-icon" title="Valider">✅</button>
+                                        <button class="action-icon" title="Rejeter">❌</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int TotalMemoires = 1;
+    private int MemoiresValides = 1;
+    private int MemoiresEnAttente = 0;
+    private int TotalEtudiants = 100;
+
+    private List<MemoireItem> DerniersMemoires = new()
+    {
+        new() { Titre = "Intelligence Artificielle et Machine Learning", Etudiant = "Jean Dupont", Encadreur = "Dr. Martin", DateDepot = DateTime.Now.AddDays(-2), Statut = "En attente" }
+        @* new() { Titre = "Développement d'une application mobile", Etudiant = "Marie Claire", Encadreur = "Dr. Bernard", DateDepot = DateTime.Now.AddDays(-5), Statut = "Validé" },
+        new() { Titre = "Sécurité des réseaux informatiques", Etudiant = "Paul Kamdem", Encadreur = "Dr. Sophie", DateDepot = DateTime.Now.AddDays(-7), Statut = "En attente" },
+        new() { Titre = "Blockchain et cryptomonnaies", Etudiant = "Alice Nguema", Encadreur = "Dr. Martin", DateDepot = DateTime.Now.AddDays(-10), Statut = "Rejeté" },
+        new() { Titre = "Cloud Computing et DevOps", Etudiant = "Thomas Essono", Encadreur = "Dr. Bernard", DateDepot = DateTime.Now.AddDays(-12), Statut = "Validé" } *@
+    };
+
+    private string GetStatusClass(string statut) => statut.ToLower() switch
+    {
+        "validé" => "success",
+        "en attente" => "warning",
+        "rejeté" => "danger",
+        _ => "success"
+    };
+
+    public class MemoireItem
+    {
+        public string Titre { get; set; } = "";
+        public string Etudiant { get; set; } = "";
+        public string Encadreur { get; set; } = "";
+        public DateTime DateDepot { get; set; }
+        public string Statut { get; set; } = "";
+    }
+}
+
+<style>
+    .dashboard-container {
+        padding: var(--space-8);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-8);
+    }
+
+    .dashboard-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .page-title {
+        font-size: var(--text-4xl);
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .page-subtitle {
+        font-size: var(--text-base);
+        color: var(--text-secondary);
+        margin: var(--space-2) 0 0 0;
+    }
+
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--space-6);
+    }
+
+    .dashboard-content {
+        display: grid;
+        gap: var(--space-6);
+    }
+
+    .content-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-xl);
+        padding: var(--space-6);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--space-6);
+    }
+
+    .card-title {
+        font-size: var(--text-2xl);
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .card-link {
+        color: var(--primary);
+        text-decoration: none;
+        font-size: var(--text-sm);
+        font-weight: 600;
+        transition: all var(--transition-fast);
+    }
+
+    .card-link:hover {
+        color: var(--primary-dark);
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+    }
+
+    .data-table th {
+        padding: var(--space-4);
+        text-align: left;
+        font-size: var(--text-xs);
+        font-weight: 700;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .data-table td {
+        padding: var(--space-4);
+        border-bottom: 1px solid var(--border-light);
+        font-size: var(--text-sm);
+        color: var(--text-primary);
+    }
+
+    .data-table tbody tr {
+        transition: all var(--transition-fast);
+    }
+
+    .data-table tbody tr:hover {
+        background: var(--bg-secondary);
+    }
+
+    .table-title {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .table-actions {
+        display: flex;
+        gap: var(--space-2);
+    }
+
+    .action-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .action-icon:hover {
+        background: var(--bg-tertiary);
+        transform: scale(1.1);
+    }
+
+    @@media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--space-4);
+        }
+
+        .kpi-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

@@ -1,0 +1,548 @@
+@page "/memoires"
+@inject MemoireAppBlazor.Services.ApiClients.MemoireApiClient MemoireApi
+@inject MemoireAppBlazor.Services.ApiClients.FiliereApiClient FiliereApi
+@inject MemoireAppBlazor.Services.ApiClients.EncadreurApiClient EncadreurApi
+@using MemoireAppBlazor.DTOs
+@rendermode InteractiveServer
+
+<PageTitle>Mémoires - MémoireApp</PageTitle>
+
+<div class="memoires-page animate-fade-in">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Liste des mémoires</h1>
+            <p class="page-subtitle">Gérez tous les mémoires académiques</p>
+        </div>
+        <button class="btn btn-primary" @onclick="OpenAddModal">
+            <span>➕</span>
+            <span>Ajouter un mémoire</span>
+        </button>
+    </div>
+
+    <div class="filters-section">
+        <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Rechercher un mémoire..." @bind="SearchQuery" @bind:event="oninput" class="search-input" />
+        </div>
+
+        <div class="filter-buttons">
+            <select class="filter-select" @bind="SelectedStatut">
+                <option value="">Tous les statuts</option>
+                <option value="Validé">Validé</option>
+                <option value="En attente">En attente</option>
+                <option value="Rejeté">Rejeté</option>
+            </select>
+
+            <select class="filter-select" @bind="SelectedFiliere">
+                <option value="">Toutes les filières</option>
+                <option value="Informatique">Informatique</option>
+                <option value="Gestion">Gestion</option>
+                <option value="Droit">Droit</option>
+            </select>
+
+            <select class="filter-select" @bind="SelectedAnnee">
+                <option value="">Toutes les années</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>Titre</th>
+                    <th>Étudiant</th>
+                    <th>Encadreur</th>
+                    <th>Filière</th>
+                    <th>Date</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var memoire in FilteredMemoires)
+                {
+                    <tr>
+                        <td><strong>@memoire.Titre</strong></td>
+                        <td>@memoire.Auteur</td>
+                        <td>@memoire.EncadreurNom</td>
+                        <td>@memoire.FiliereNom</td>
+                        <td>@memoire.Date.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            <span class="badge badge-@GetStatusClass(memoire.Statut)">
+                                @memoire.Statut
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-icon" title="Voir" @onclick="() => ViewMemoire(memoire)">👁️</button>
+                                <button class="btn-icon" title="Modifier" @onclick="() => EditMemoire(memoire)">✏️</button>
+                                <button class="btn-icon danger" title="Supprimer" @onclick="() => DeleteMemoire(memoire)">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (ShowModal)
+{
+    <div class="modal-overlay" @onclick="CloseModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2 class="modal-title">@(IsEditing ? "Modifier le mémoire" : "Ajouter un mémoire")</h2>
+                <button class="modal-close" @onclick="CloseModal">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Titre</label>
+                    <input type="text" class="form-input" @bind="NewMemoire.Titre" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Auteur</label>
+                    <input type="text" class="form-input" @bind="NewMemoire.Auteur" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Contenu</label>
+                    <textarea class="form-input" @bind="NewMemoire.Contenu" rows="3"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Filière</label>
+                        <select class="form-input" @bind="NewMemoire.FiliereId">
+                            <option value="0">-- Sélectionner --</option>
+                            @foreach (var f in filieres)
+                            {
+                                <option value="@f.Id">@f.Nom</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Encadreur</label>
+                        <select class="form-input" @bind="NewMemoire.EncadreurId">
+                            <option value="0">-- Sélectionner --</option>
+                            @foreach (var e in encadreurs)
+                            {
+                                <option value="@e.Id">@e.Nom</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="CloseModal">Annuler</button>
+                <button class="btn btn-primary" @onclick="SaveMemoire">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string SearchQuery { get; set; } = "";
+    private string SelectedStatut { get; set; } = "";
+    private string SelectedFiliere { get; set; } = "";
+    private string SelectedAnnee { get; set; } = "";
+    private bool ShowModal { get; set; } = false;
+    private bool IsEditing { get; set; } = false;
+    
+    private CreateMemoireDto NewMemoire { get; set; } = new();
+    private int EditingId { get; set; } = 0;
+    
+    private List<MemoireDto> MemoiresList = new();
+    private List<FiliereDto> filieres = new();
+    private List<EncadreurDto> encadreurs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var memoiresTask = MemoireApi.GetAllAsync();
+        var filieresTask = FiliereApi.GetAllAsync();
+        var encadreursTask = EncadreurApi.GetAllAsync();
+
+        await Task.WhenAll(memoiresTask, filieresTask, encadreursTask);
+
+        MemoiresList = await memoiresTask;
+        filieres = await filieresTask;
+        encadreurs = await encadreursTask;
+    }
+
+    private IEnumerable<MemoireDto> FilteredMemoires => MemoiresList
+        .Where(m => string.IsNullOrEmpty(SearchQuery) || 
+                    m.Titre.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) || 
+                    m.Auteur.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase))
+        .Where(m => string.IsNullOrEmpty(SelectedStatut) || m.Statut == SelectedStatut)
+        .Where(m => string.IsNullOrEmpty(SelectedFiliere) || m.FiliereNom == SelectedFiliere);
+
+    private string GetStatusClass(string statut) => statut.ToLower() switch
+    {
+        "validé" => "success",
+        "en attente" => "warning",
+        "rejeté" => "danger",
+        _ => "success"
+    };
+
+    private void OpenAddModal()
+    {
+        IsEditing = false;
+        NewMemoire = new CreateMemoireDto();
+        ShowModal = true;
+    }
+
+    private void EditMemoire(MemoireDto memoire)
+    {
+        IsEditing = true;
+        EditingId = memoire.Id;
+        NewMemoire = new CreateMemoireDto
+        {
+            Titre = memoire.Titre,
+            Auteur = memoire.Auteur,
+            Contenu = memoire.Contenu,
+            FiliereId = memoire.FiliereId,
+            EncadreurId = memoire.EncadreurId
+        };
+        ShowModal = true;
+    }
+
+    private void ViewMemoire(MemoireDto memoire)
+    {
+        // Navigation vers page détails
+    }
+
+    private async Task DeleteMemoire(MemoireDto memoire)
+    {
+        await MemoireApi.DeleteAsync(memoire.Id);
+        MemoiresList = await MemoireApi.GetAllAsync();
+    }
+
+    private async Task SaveMemoire()
+    {
+        try
+        {
+            if (IsEditing)
+            {
+                var updateDto = new MemoireDto
+                {
+                    Id = EditingId,
+                    Titre = NewMemoire.Titre,
+                    Auteur = NewMemoire.Auteur,
+                    Contenu = NewMemoire.Contenu,
+                    FiliereId = NewMemoire.FiliereId,
+                    EncadreurId = NewMemoire.EncadreurId,
+                    Date = DateTime.Now,
+                    Statut = "En attente",
+                    FiliereNom = "",
+                    EncadreurNom = ""
+                };
+                await MemoireApi.UpdateAsync(EditingId, updateDto);
+            }
+            else
+            {
+                await MemoireApi.CreateAsync(NewMemoire);
+            }
+            
+            MemoiresList = await MemoireApi.GetAllAsync();
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            // Handle error
+        }
+    }
+
+    private void CloseModal()
+    {
+        ShowModal = false;
+        NewMemoire = new CreateMemoireDto();
+    }
+}
+
+<style>
+    .memoires-page {
+        padding: var(--space-8);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-6);
+    }
+
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .page-title {
+        font-size: var(--text-4xl);
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .page-subtitle {
+        font-size: var(--text-base);
+        color: var(--text-secondary);
+        margin: var(--space-2) 0 0 0;
+    }
+
+    .filters-section {
+        display: flex;
+        gap: var(--space-4);
+        flex-wrap: wrap;
+    }
+
+    .search-bar {
+        flex: 1;
+        min-width: 300px;
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        background: var(--bg-secondary);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--space-3) var(--space-4);
+        transition: all var(--transition-fast);
+    }
+
+    .search-bar:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1);
+    }
+
+    .search-icon {
+        font-size: var(--text-lg);
+    }
+
+    .search-input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        font-size: var(--text-sm);
+        color: var(--text-primary);
+        outline: none;
+    }
+
+    .filter-buttons {
+        display: flex;
+        gap: var(--space-3);
+    }
+
+    .filter-select {
+        padding: var(--space-3) var(--space-4);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-size: var(--text-sm);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+
+    .table-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-xl);
+        padding: var(--space-6);
+        overflow-x: auto;
+    }
+
+    .modern-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .modern-table thead {
+        background: var(--bg-secondary);
+    }
+
+    .modern-table th {
+        padding: var(--space-4);
+        text-align: left;
+        font-size: var(--text-xs);
+        font-weight: 700;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .modern-table td {
+        padding: var(--space-4);
+        border-bottom: 1px solid var(--border-light);
+        font-size: var(--text-sm);
+        color: var(--text-primary);
+    }
+
+    .modern-table tbody tr {
+        transition: all var(--transition-fast);
+    }
+
+    .modern-table tbody tr:hover {
+        background: var(--bg-secondary);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: var(--space-2);
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .btn-icon:hover {
+        background: var(--primary-light);
+        transform: scale(1.1);
+    }
+
+    .btn-icon.danger:hover {
+        background: #fee2e2;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: fadeIn var(--transition-fast);
+    }
+
+    .modal-content {
+        background: var(--bg-card);
+        border-radius: var(--radius-xl);
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-xl);
+        animation: slideIn var(--transition-base);
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-6);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-title {
+        font-size: var(--text-2xl);
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .modal-close {
+        width: 32px;
+        height: 32px;
+        background: var(--bg-secondary);
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: var(--text-xl);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .modal-close:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .modal-body {
+        padding: var(--space-6);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-4);
+    }
+
+    .form-label {
+        font-size: var(--text-sm);
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .form-input {
+        padding: var(--space-3) var(--space-4);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-size: var(--text-sm);
+        transition: all var(--transition-fast);
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1);
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-3);
+        padding: var(--space-6);
+        border-top: 1px solid var(--border-color);
+    }
+
+    @@media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--space-4);
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
