@@ -72,3 +72,5 @@ _ReSharper*/
 # Rider caches
 .idea/
 *.sln
+
+.fake

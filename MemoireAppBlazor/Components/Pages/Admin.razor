@@ -1,0 +1,154 @@
+@page "/admin"
+@inject HttpClient Http
+@rendermode InteractiveServer
+
+<PageTitle>Administration - Base de données</PageTitle>
+
+<div class="admin-page">
+    <h1>Administration de la base de données</h1>
+    
+    <div class="admin-actions">
+        <button class="btn btn-danger" @onclick="ResetDatabase" disabled="@isLoading">
+            @if (isLoading && action == "reset")
+            {
+                <span>⏳ Réinitialisation...</span>
+            }
+            else
+            {
+                <span>🗑️ Réinitialiser la base</span>
+            }
+        </button>
+
+        <button class="btn btn-primary" @onclick="SeedDatabase" disabled="@isLoading">
+            @if (isLoading && action == "seed")
+            {
+                <span>⏳ Insertion...</span>
+            }
+            else
+            {
+                <span>➕ Insérer les données de test</span>
+            }
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert @alertClass">
+            @message
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = false;
+    private string message = "";
+    private string alertClass = "";
+    private string action = "";
+
+    private async Task ResetDatabase()
+    {
+        isLoading = true;
+        action = "reset";
+        try
+        {
+            var response = await Http.PostAsync("http://localhost:5197/api/Database/reset", null);
+            if (response.IsSuccessStatusCode)
+            {
+                message = "✅ Base de données réinitialisée avec succès!";
+                alertClass = "alert-success";
+            }
+            else
+            {
+                message = "❌ Erreur lors de la réinitialisation";
+                alertClass = "alert-danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            message = $"❌ Erreur: {ex.Message}";
+            alertClass = "alert-danger";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SeedDatabase()
+    {
+        isLoading = true;
+        action = "seed";
+        try
+        {
+            var response = await Http.PostAsync("http://localhost:5197/api/Database/seed", null);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadAsStringAsync();
+                message = $"✅ Données insérées avec succès! {result}";
+                alertClass = "alert-success";
+            }
+            else
+            {
+                message = "❌ Erreur lors de l'insertion des données";
+                alertClass = "alert-danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            message = $"❌ Erreur: {ex.Message}";
+            alertClass = "alert-danger";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
+
+<style>
+    .admin-page {
+        padding: var(--space-8);
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .admin-page h1 {
+        font-size: var(--text-3xl);
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--space-6);
+    }
+
+    .admin-actions {
+        display: flex;
+        gap: var(--space-4);
+        margin-bottom: var(--space-6);
+    }
+
+    .alert {
+        padding: var(--space-4);
+        border-radius: var(--radius-md);
+        margin-top: var(--space-4);
+    }
+
+    .alert-success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #10b981;
+    }
+
+    .alert-danger {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #ef4444;
+    }
+
+    .btn-danger {
+        background: #ef4444;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #dc2626;
+    }
+</style>
