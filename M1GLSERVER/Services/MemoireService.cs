@@ -1,6 +1,7 @@
 using M1GLSERVER.DTOs;
 using M1GLSERVER.EntityE2E;
 using M1GLSERVER.Repositories;
+using M1GLSERVER.Services.interfaces;
 
 namespace M1GLSERVER.Services
 {

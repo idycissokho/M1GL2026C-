@@ -2,6 +2,7 @@ using M1GLSERVER.Components;
 using M1GLSERVER.EntityE2E;
 using M1GLSERVER.Repositories;
 using M1GLSERVER.Services;
+using M1GLSERVER.Services.interfaces;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

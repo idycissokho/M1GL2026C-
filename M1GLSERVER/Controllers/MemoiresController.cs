@@ -1,5 +1,6 @@
 using M1GLSERVER.DTOs;
 using M1GLSERVER.Services;
+using M1GLSERVER.Services.interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace M1GLSERVER.Controllers
