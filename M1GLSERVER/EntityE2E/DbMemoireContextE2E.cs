@@ -12,6 +12,8 @@ namespace M1GLSERVER.EntityE2E
         }
 
         public virtual DbSet<Memoire> memoires { get; set; }
+        public virtual DbSet<Encadreur> Encadreurs { get; set; }
+        public virtual DbSet<Etudiant> Etudiants { get; set; }
         public virtual DbSet<Filiere> Filieres { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
