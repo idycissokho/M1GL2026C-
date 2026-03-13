@@ -23,9 +23,10 @@ namespace M1GLSERVER.Migrations
             migrationBuilder.DropTable(
                 name: "Encadreurs");
 
-            migrationBuilder.DropTable(
-                name: "vw_listememoires",
-                schema: "public");
+            // Vue supprimée - elle n'existe pas dans la première migration
+            // migrationBuilder.DropTable(
+            //     name: "vw_listememoires",
+            //     schema: "public");
 
             migrationBuilder.DropPrimaryKey(
                 name: "PK_Etudiants",

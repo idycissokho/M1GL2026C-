@@ -1,8 +1,10 @@
 using M1GLSERVER.Components;
+using M1GLSERVER.Data;
 using M1GLSERVER.EntityE2E;
 using M1GLSERVER.Repositories;
 using M1GLSERVER.Services;
 using M1GLSERVER.Services.interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +15,11 @@ var connectionString = builder.Configuration.GetConnectionString("connBdMemoire"
 
 builder.Services.AddDbContext<DbMemoireContextE2E>(options =>
     options.UseNpgsql(connectionString));
+
+// Configurer Identity
+builder.Services.AddIdentity<Utilisateur, IdentityRole<int>>()
+    .AddEntityFrameworkStores<DbMemoireContextE2E>()
+    .AddDefaultTokenProviders();
 
 // Enregistrer les repositories
 builder.Services.AddScoped<IMemoireRepository, MemoireRepository>();
@@ -35,7 +42,14 @@ builder.Services.AddRazorComponents()
 
 var app = builder.Build();
 
-
+// Seed la base de données
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<DbMemoireContextE2E>();
+    var userManager = services.GetRequiredService<UserManager<Utilisateur>>();
+    await DbSeeder.SeedAsync(context, userManager);
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
