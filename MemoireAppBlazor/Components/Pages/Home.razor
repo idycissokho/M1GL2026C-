@@ -1,7 +1,9 @@
 @page "/"
+@attribute [Authorize]
 @inject MemoireAppBlazor.Services.ApiClients.MemoireApiClient MemoireApi
 @inject MemoireAppBlazor.Services.ApiClients.EtudiantApiClient EtudiantApi
 @using MemoireAppBlazor.DTOs
+@using Microsoft.AspNetCore.Authorization
 @rendermode InteractiveServer
 
 <PageTitle>Dashboard - MémoireApp</PageTitle>

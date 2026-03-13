@@ -1,0 +1,365 @@
+@page "/encadreurs"
+@inject MemoireAppBlazor.Services.ApiClients.EncadreurApiClient EncadreurApi
+@using MemoireAppBlazor.DTOs
+@rendermode InteractiveServer
+
+<PageTitle>Encadreurs - MémoireApp</PageTitle>
+
+<div class="encadreurs-page animate-fade-in">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Liste des encadreurs</h1>
+            <p class="page-subtitle">Gérez tous les encadreurs académiques</p>
+        </div>
+        <button class="btn btn-primary" @onclick="OpenAddModal">
+            <span>➕</span>
+            <span>Ajouter un encadreur</span>
+        </button>
+    </div>
+
+    <div class="filters-section">
+        <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Rechercher un encadreur..." @bind="SearchQuery" @bind:event="oninput" class="search-input" />
+        </div>
+    </div>
+
+    <div class="table-card">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var encadreur in FilteredEncadreurs)
+                {
+                    <tr>
+                        <td>@encadreur.Id</td>
+                        <td><strong>@encadreur.Nom</strong></td>
+                        <td>@encadreur.Email</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-icon" title="Modifier" @onclick="() => EditEncadreur(encadreur)">✏️</button>
+                                <button class="btn-icon danger" title="Supprimer" @onclick="() => DeleteEncadreur(encadreur)">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (ShowModal)
+{
+    <div class="modal-overlay" @onclick="CloseModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2 class="modal-title">@(IsEditing ? "Modifier l'encadreur" : "Ajouter un encadreur")</h2>
+                <button class="modal-close" @onclick="CloseModal">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Nom</label>
+                    <input type="text" class="form-input" @bind="FormEncadreur.Nom" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" @bind="FormEncadreur.Email" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="CloseModal">Annuler</button>
+                <button class="btn btn-primary" @onclick="SaveEncadreur">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string SearchQuery { get; set; } = "";
+    private bool ShowModal { get; set; } = false;
+    private bool IsEditing { get; set; } = false;
+    private int EditingId { get; set; } = 0;
+
+    private CreateEncadreurDto FormEncadreur { get; set; } = new();
+    private List<EncadreurDto> EncadreursList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        EncadreursList = await EncadreurApi.GetAllAsync();
+    }
+
+    private IEnumerable<EncadreurDto> FilteredEncadreurs => EncadreursList
+        .Where(e => string.IsNullOrEmpty(SearchQuery) ||
+                    e.Nom.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+                    e.Email.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase));
+
+    private void OpenAddModal()
+    {
+        IsEditing = false;
+        FormEncadreur = new();
+        ShowModal = true;
+    }
+
+    private void EditEncadreur(EncadreurDto encadreur)
+    {
+        IsEditing = true;
+        EditingId = encadreur.Id;
+        FormEncadreur = new CreateEncadreurDto
+        {
+            Nom = encadreur.Nom,
+            Email = encadreur.Email
+        };
+        ShowModal = true;
+    }
+
+    private async Task DeleteEncadreur(EncadreurDto encadreur)
+    {
+        await EncadreurApi.DeleteAsync(encadreur.Id);
+        EncadreursList = await EncadreurApi.GetAllAsync();
+    }
+
+    private async Task SaveEncadreur()
+    {
+        try
+        {
+            if (IsEditing)
+            {
+                await EncadreurApi.UpdateAsync(EditingId, new UpdateEncadreurDto
+                {
+                    Nom = FormEncadreur.Nom,
+                    Email = FormEncadreur.Email
+                });
+            }
+            else
+            {
+                await EncadreurApi.CreateAsync(FormEncadreur);
+            }
+
+            EncadreursList = await EncadreurApi.GetAllAsync();
+            CloseModal();
+        }
+        catch { }
+    }
+
+    private void CloseModal()
+    {
+        ShowModal = false;
+        FormEncadreur = new();
+    }
+}
+
+<style>
+    .encadreurs-page {
+        padding: var(--space-8);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-6);
+    }
+
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .page-title {
+        font-size: var(--text-4xl);
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .page-subtitle {
+        font-size: var(--text-base);
+        color: var(--text-secondary);
+        margin: var(--space-2) 0 0 0;
+    }
+
+    .filters-section { display: flex; gap: var(--space-4); }
+
+    .search-bar {
+        flex: 1;
+        min-width: 300px;
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        background: var(--bg-secondary);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--space-3) var(--space-4);
+        transition: all var(--transition-fast);
+    }
+
+    .search-bar:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1);
+    }
+
+    .search-icon { font-size: var(--text-lg); }
+
+    .search-input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        font-size: var(--text-sm);
+        color: var(--text-primary);
+        outline: none;
+    }
+
+    .table-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-xl);
+        padding: var(--space-6);
+        overflow-x: auto;
+    }
+
+    .modern-table { width: 100%; border-collapse: collapse; }
+    .modern-table thead { background: var(--bg-secondary); }
+
+    .modern-table th {
+        padding: var(--space-4);
+        text-align: left;
+        font-size: var(--text-xs);
+        font-weight: 700;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .modern-table td {
+        padding: var(--space-4);
+        border-bottom: 1px solid var(--border-light);
+        font-size: var(--text-sm);
+        color: var(--text-primary);
+    }
+
+    .modern-table tbody tr { transition: all var(--transition-fast); }
+    .modern-table tbody tr:hover { background: var(--bg-secondary); }
+
+    .action-buttons { display: flex; gap: var(--space-2); }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .btn-icon:hover { background: var(--primary-light); transform: scale(1.1); }
+    .btn-icon.danger:hover { background: #fee2e2; }
+
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: var(--bg-card);
+        border-radius: var(--radius-xl);
+        width: 90%;
+        max-width: 480px;
+        box-shadow: var(--shadow-xl);
+        animation: slideIn var(--transition-base);
+    }
+
+    @@keyframes slideIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-6);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-title {
+        font-size: var(--text-2xl);
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .modal-close {
+        width: 32px;
+        height: 32px;
+        background: var(--bg-secondary);
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: var(--text-xl);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .modal-close:hover { background: var(--bg-tertiary); }
+
+    .modal-body {
+        padding: var(--space-6);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    .form-label {
+        font-size: var(--text-sm);
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .form-input {
+        padding: var(--space-3) var(--space-4);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-size: var(--text-sm);
+        transition: all var(--transition-fast);
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1);
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-3);
+        padding: var(--space-6);
+        border-top: 1px solid var(--border-color);
+    }
+
+    @@media (max-width: 768px) {
+        .page-header { flex-direction: column; align-items: flex-start; gap: var(--space-4); }
+    }
+</style>
