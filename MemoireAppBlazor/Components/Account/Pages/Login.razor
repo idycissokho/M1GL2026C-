@@ -1,8 +1,10 @@
 @page "/Account/Login"
 @layout MemoireAppBlazor.Components.Layout.EmptyLayout
 @inject MemoireAppBlazor.Services.ApiClients.AuthApiClient AuthApi
-@inject MemoireAppBlazor.Services.AuthSessionService AuthSession
+@inject MemoireAppBlazor.Services.AuthStateService AuthState
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@rendermode InteractiveServer
 
 <PageTitle>Connexion - MémoireApp</PageTitle>
 
@@ -25,9 +27,12 @@
         </div>
         <div class="form-group">
             <label class="form-label">Mot de passe</label>
-            <input type="password" class="form-input" @bind="Password" placeholder="••••••••" />
+            <input type="password" class="form-input" @bind="Password" placeholder="••••••••"
+                   @onkeydown="@(async e => { if (e.Key == "Enter") await LoginUser(); })" />
         </div>
-        <button class="login-btn" @onclick="LoginUser">Se connecter</button>
+        <button class="login-btn" @onclick="LoginUser" disabled="@IsLoading">
+            @(IsLoading ? "Connexion..." : "Se connecter")
+        </button>
     </div>
 </div>
 
@@ -35,17 +40,25 @@
     private string Email { get; set; } = "";
     private string Password { get; set; } = "";
     private string? errorMessage;
+    private bool IsLoading { get; set; } = false;
 
     private async Task LoginUser()
     {
         errorMessage = null;
+        IsLoading = true;
+
         var token = await AuthApi.LoginAsync(Email, Password);
+
         if (token == null)
         {
             errorMessage = "Email ou mot de passe incorrect.";
+            IsLoading = false;
             return;
         }
-        AuthSession.SetSession(token, Email);
+
+        await JS.InvokeVoidAsync("localStorage.setItem", "jwt_token", token);
+        await JS.InvokeVoidAsync("localStorage.setItem", "user_email", Email);
+        AuthState.SetAuthenticated(token, Email);
         NavigationManager.NavigateTo("/dashboard", forceLoad: true);
     }
 }
@@ -129,5 +142,6 @@
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
     }
 
-    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16, 185, 129, 0.5); }
+    .login-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16, 185, 129, 0.5); }
+    .login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 </style>

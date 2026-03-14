@@ -1,13 +1,15 @@
 @page "/"
-@inject MemoireAppBlazor.Services.AuthSessionService AuthSession
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@rendermode InteractiveServer
 
 @code {
-    protected override void OnInitialized()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (AuthSession.IsAuthenticated)
-            NavigationManager.NavigateTo("/dashboard", forceLoad: true);
-        else
-            NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+        if (firstRender)
+        {
+            var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
+            NavigationManager.NavigateTo(string.IsNullOrEmpty(token) ? "/Account/Login" : "/dashboard", forceLoad: true);
+        }
     }
 }

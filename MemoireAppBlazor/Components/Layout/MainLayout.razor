@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
-@inject MemoireAppBlazor.Services.AuthSessionService AuthSession
+@inject MemoireAppBlazor.Services.AuthStateService AuthState
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 
 <div class="app-layout" data-theme="@(IsDarkMode ? "dark" : "light")">
     <Sidebar OnToggle="HandleSidebarToggle" />
@@ -24,10 +25,17 @@
     private bool IsDarkMode { get; set; } = false;
     private bool IsSidebarCollapsed { get; set; } = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!AuthSession.IsAuthenticated)
-            NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+        if (firstRender)
+        {
+            var token = await JS.InvokeAsync<string?>("localStorage.getItem", "jwt_token");
+            var email = await JS.InvokeAsync<string?>("localStorage.getItem", "user_email");
+            if (string.IsNullOrEmpty(token))
+                NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+            else
+                AuthState.SetAuthenticated(token, email ?? "");
+        }
     }
 
     private void HandleThemeChange(bool isDark) => IsDarkMode = isDark;
