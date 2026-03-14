@@ -5,8 +5,30 @@ namespace M1GLSERVER.Data
 {
     public static class DbSeeder
     {
-        public static async Task SeedAsync(DbMemoireContextE2E context, UserManager<Utilisateur> userManager)
+        public static async Task SeedAsync(DbMemoireContextE2E context, UserManager<Utilisateur> userManager, RoleManager<IdentityRole<int>> roleManager)
         {
+            // Seed rôle Admin
+            if (!await roleManager.RoleExistsAsync("Admin"))
+                await roleManager.CreateAsync(new IdentityRole<int>("Admin"));
+
+            // Seed Administrateurs
+            var admins = new[]
+            {
+                new { Email = "admin@memoire.sn", Nom = "Admin", Prenom = "Principal", Password = "Admin@123" },
+                new { Email = "admin2@memoire.sn", Nom = "Admin", Prenom = "Secondaire", Password = "Admin@123" }
+            };
+
+            foreach (var a in admins)
+            {
+                if (await userManager.FindByEmailAsync(a.Email) == null)
+                {
+                    var admin = new Utilisateur { Nom = a.Nom, Prenom = a.Prenom, Email = a.Email, UserName = a.Email, EmailConfirmed = true };
+                    var result = await userManager.CreateAsync(admin, a.Password);
+                    if (result.Succeeded)
+                        await userManager.AddToRoleAsync(admin, "Admin");
+                }
+            }
+
             if (context.Filieres.Any() || context.Etudiants.Any() || context.Encadreurs.Any())
                 return;
 

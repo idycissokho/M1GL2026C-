@@ -1,14 +1,13 @@
 @page "/"
+@inject MemoireAppBlazor.Services.AuthSessionService AuthSession
+@inject NavigationManager NavigationManager
 
 @code {
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
-
     protected override void OnInitialized()
     {
-        if (HttpContext.User.Identity?.IsAuthenticated == true)
-            HttpContext.Response.Redirect("/dashboard");
+        if (AuthSession.IsAuthenticated)
+            NavigationManager.NavigateTo("/dashboard", forceLoad: true);
         else
-            HttpContext.Response.Redirect("/Account/Login");
+            NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
     }
 }

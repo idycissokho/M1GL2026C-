@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@inject MemoireAppBlazor.Services.AuthSessionService AuthSession
+@inject NavigationManager NavigationManager
 
 <div class="app-layout" data-theme="@(IsDarkMode ? "dark" : "light")">
     <Sidebar OnToggle="HandleSidebarToggle" />
@@ -22,15 +24,14 @@
     private bool IsDarkMode { get; set; } = false;
     private bool IsSidebarCollapsed { get; set; } = false;
 
-    private void HandleThemeChange(bool isDark)
+    protected override void OnInitialized()
     {
-        IsDarkMode = isDark;
+        if (!AuthSession.IsAuthenticated)
+            NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
     }
 
-    private void HandleSidebarToggle(bool isCollapsed)
-    {
-        IsSidebarCollapsed = isCollapsed;
-    }
+    private void HandleThemeChange(bool isDark) => IsDarkMode = isDark;
+    private void HandleSidebarToggle(bool isCollapsed) => IsSidebarCollapsed = isCollapsed;
 }
 
 <style>
