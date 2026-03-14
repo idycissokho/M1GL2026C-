@@ -1,4 +1,6 @@
 @page "/encadreurs"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
 @inject MemoireAppBlazor.Services.ApiClients.EncadreurApiClient EncadreurApi
 @using MemoireAppBlazor.DTOs
 @rendermode InteractiveServer
