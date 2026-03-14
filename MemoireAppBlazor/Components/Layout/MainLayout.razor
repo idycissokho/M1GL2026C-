@@ -1,4 +1,7 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+@rendermode InteractiveServer
 
 <div class="app-layout" data-theme="@(IsDarkMode ? "dark" : "light")">
     <Sidebar OnToggle="HandleSidebarToggle" />
@@ -21,6 +24,15 @@
 @code {
     private bool IsDarkMode { get; set; } = false;
     private bool IsSidebarCollapsed { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (!(authState.User.Identity?.IsAuthenticated ?? false))
+        {
+            NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+        }
+    }
 
     private void HandleThemeChange(bool isDark)
     {
