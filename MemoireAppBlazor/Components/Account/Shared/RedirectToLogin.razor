@@ -5,9 +5,9 @@
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (!authState.User.Identity?.IsAuthenticated ?? true)
+        if (!(authState.User.Identity?.IsAuthenticated ?? false))
         {
-            NavigationManager.NavigateTo("Account/Login");
+            NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
         }
     }
 }

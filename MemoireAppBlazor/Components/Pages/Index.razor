@@ -1,0 +1,16 @@
+@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        var isAuthenticated = HttpContext.User.Identity?.IsAuthenticated ?? false;
+        if (isAuthenticated)
+            HttpContext.Response.Redirect("/dashboard");
+        else
+            HttpContext.Response.Redirect("/Account/Login");
+    }
+}
