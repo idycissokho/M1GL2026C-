@@ -21,7 +21,15 @@ builder.Services.AddAuthentication(options =>
         options.DefaultScheme = IdentityConstants.ApplicationScheme;
         options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
     })
-    .AddIdentityCookies();
+    .AddIdentityCookies(cookies =>
+    {
+        cookies.ApplicationCookie!.Configure(opt =>
+        {
+            opt.ExpireTimeSpan = TimeSpan.FromHours(8);
+            opt.SlidingExpiration = false;
+            opt.Cookie.HttpOnly = true;
+        });
+    });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -53,7 +61,7 @@ builder.Services.AddScoped<FiliereApiClient>();
 
 var app = builder.Build();
 
-// Seed admin
+// Seed admin + invalider toutes les sessions existantes
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -63,6 +71,11 @@ using (var scope = app.Services.CreateScope())
         var admin = new ApplicationUser { UserName = adminEmail, Email = adminEmail, EmailConfirmed = true };
         await userManager.CreateAsync(admin, "Admin@123");
     }
+
+    // Invalider tous les cookies existants au démarrage
+    var allUsers = userManager.Users.ToList();
+    foreach (var user in allUsers)
+        await userManager.UpdateSecurityStampAsync(user);
 }
 
 // Configure the HTTP request pipeline.

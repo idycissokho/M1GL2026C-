@@ -1,5 +1,4 @@
 @page "/"
-@using Microsoft.AspNetCore.Components.Authorization
 
 @code {
     [CascadingParameter]
@@ -7,8 +6,7 @@
 
     protected override void OnInitialized()
     {
-        var isAuthenticated = HttpContext.User.Identity?.IsAuthenticated ?? false;
-        if (isAuthenticated)
+        if (HttpContext.User.Identity?.IsAuthenticated == true)
             HttpContext.Response.Redirect("/dashboard");
         else
             HttpContext.Response.Redirect("/Account/Login");
